@@ -22,8 +22,8 @@ def verify_admin(username, password):
     cur.execute("SELECT password FROM adminuser WHERE username = %s;", (username,))
     row = cur.fetchone()
     cur.close()
+    conn.close()
     return row and row[0] == hash_password(password)
-
 # --- ID generation ---
 def generate_userid():
     conn = get_connection()
