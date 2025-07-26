@@ -3,13 +3,9 @@ import psycopg2
 import hashlib
 import pandas as pd
 
-# --- DB Connection (with enforced SSL) ---
-@st.cache_resource
+# --- DB Connection (no caching) ---
 def get_connection():
-    return psycopg2.connect(
-        st.secrets["NEON_DB_URL"],
-        sslmode="require"
-    )
+    return psycopg2.connect(st.secrets["NEON_DB_URL"], sslmode="require")
 
 # --- Password hashing ---
 def hash_password(password):
@@ -24,6 +20,7 @@ def verify_admin(username, password):
     cur.close()
     conn.close()
     return row and row[0] == hash_password(password)
+
 # --- ID generation ---
 def generate_userid():
     conn = get_connection()
@@ -31,6 +28,7 @@ def generate_userid():
     cur.execute("SELECT COUNT(*) FROM pointuser;")
     count = cur.fetchone()[0]
     cur.close()
+    conn.close()
     return f"u{count + 1}"
 
 def generate_pid():
@@ -39,6 +37,7 @@ def generate_pid():
     cur.execute("SELECT COUNT(*) FROM pointsystem;")
     count = cur.fetchone()[0]
     cur.close()
+    conn.close()
     return f"p{count + 1}"
 
 # --- Database operations ---
@@ -48,6 +47,7 @@ def get_all_users():
     cur.execute("SELECT userid, username, discord_name, points FROM pointuser ORDER BY userid;")
     rows = cur.fetchall()
     cur.close()
+    conn.close()
     return rows
 
 def insert_pointuser(userid, username, discord_name):
@@ -57,6 +57,7 @@ def insert_pointuser(userid, username, discord_name):
                 (userid, username, discord_name))
     conn.commit()
     cur.close()
+    conn.close()
 
 def update_user_points(userid, amount):
     conn = get_connection()
@@ -64,6 +65,7 @@ def update_user_points(userid, amount):
     cur.execute("UPDATE pointuser SET points = points + %s WHERE userid = %s;", (amount, userid))
     conn.commit()
     cur.close()
+    conn.close()
 
 def insert_point_log(userid, amount, padded):
     conn = get_connection()
@@ -73,6 +75,7 @@ def insert_point_log(userid, amount, padded):
                 (pid, userid, amount, padded))
     conn.commit()
     cur.close()
+    conn.close()
 
 # --- Predefined point actions ---
 POINT_ACTIONS = {
