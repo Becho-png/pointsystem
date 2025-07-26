@@ -4,15 +4,15 @@ import hashlib
 import uuid
 import pandas as pd
 
-# --- Database Connection ---
+# --- DB Connection ---
 def get_connection():
     return psycopg2.connect(st.secrets["NEON_DB_URL"])
 
-# --- Password Hashing ---
+# --- Hash password ---
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-# --- Verify Admin Login ---
+# --- Admin login verification ---
 def verify_admin(username, password):
     try:
         conn = get_connection()
@@ -26,12 +26,12 @@ def verify_admin(username, password):
         st.error(f"Error verifying admin: {e}")
         return False
 
-# --- Get All Users ---
+# --- Get all users from pointuser table ---
 def get_all_users():
     try:
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("SELECT userid, username, discord, points FROM pointuser;")
+        cur.execute("SELECT userid, username, discord_name, points FROM pointuser;")
         users = cur.fetchall()
         cur.close()
         conn.close()
@@ -40,7 +40,7 @@ def get_all_users():
         st.error(f"Error fetching users: {e}")
         return []
 
-# --- Get Point History ---
+# --- Point history ---
 def get_point_history():
     try:
         conn = get_connection()
@@ -54,7 +54,7 @@ def get_point_history():
         st.error(f"Error fetching point history: {e}")
         return []
 
-# --- Add Points ---
+# --- Add points ---
 def add_points(user_id, amount):
     try:
         conn = get_connection()
@@ -68,7 +68,7 @@ def add_points(user_id, amount):
     except Exception as e:
         st.error(f"Error adding points: {e}")
 
-# --- Remove Points ---
+# --- Remove points ---
 def remove_points(user_id, amount):
     try:
         conn = get_connection()
@@ -82,10 +82,10 @@ def remove_points(user_id, amount):
     except Exception as e:
         st.error(f"Error removing points: {e}")
 
-# --- UI Start ---
+# --- Streamlit Page ---
 st.set_page_config(page_title="Admin Point System", layout="centered")
 
-# --- Login ---
+# --- Login Logic ---
 if "admin_logged_in" not in st.session_state:
     st.session_state["admin_logged_in"] = False
 
@@ -101,9 +101,8 @@ if not st.session_state["admin_logged_in"]:
             st.error("Invalid credentials.")
     st.stop()
 
-# --- Admin Panel ---
+# --- Admin Panel Tabs ---
 st.title("Admin Control Panel")
-
 tab1, tab2, tab3 = st.tabs(["View Users", "Add/Remove Points", "Point History"])
 
 # --- Tab 1: View Users ---
@@ -117,7 +116,7 @@ with tab1:
     else:
         st.info("No users found.")
 
-# --- Tab 2: Add/Remove Points ---
+# --- Tab 2: Add / Remove Points ---
 with tab2:
     users = get_all_users()
     if users:
@@ -135,7 +134,7 @@ with tab2:
     else:
         st.info("No users available.")
 
-# --- Tab 3: Point History ---
+# --- Tab 3: View Point History ---
 with tab3:
     history = get_point_history()
     if history:
