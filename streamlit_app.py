@@ -131,4 +131,17 @@ else:
     with tab3:
         users = get_all_users()
         if users:
-            usernames = [f"{u[1]} ({u[2]})" for u in]()
+            usernames = [f"{u[1]} ({u[2]})" for u in users]
+            selected_user = st.selectbox("Select User", usernames)
+            action = st.selectbox("Select Action", list(POINT_ACTIONS.keys()))
+
+            if st.button("Apply Action"):
+                user = users[usernames.index(selected_user)]
+                userid = user[0]
+                amount, padded = POINT_ACTIONS[action]
+                update_user_points(userid, amount)
+                insert_point_log(userid, amount, padded)
+                st.success(f"✅ {action} applied to {user[1]} ({user[0]})")
+                st.rerun()
+        else:
+            st.warning("No users to assign actions.")
