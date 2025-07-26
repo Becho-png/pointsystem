@@ -1,6 +1,7 @@
 import streamlit as st
 import psycopg2
 import hashlib
+import pandas as pd
 
 # --- DB Connection ---
 @st.cache_resource
@@ -97,10 +98,11 @@ else:
     st.success("✅ Admin logged in.")
     st.title("🛠️ Admin Panel: Point System")
 
-    tab1, tab2, tab3 = st.tabs([
+    tab1, tab2, tab3, tab4 = st.tabs([
         "🔍 View Users",
         "➕ Create User",
-        "🏆 Apply Point Action"
+        "🏆 Apply Point Action",
+        "📊 View User Points"
     ])
 
     # --- Tab 1: View Users ---
@@ -145,3 +147,21 @@ else:
                 st.rerun()
         else:
             st.warning("No users to assign actions.")
+
+    # --- Tab 4: View Points & Export ---
+    with tab4:
+        st.subheader("📊 All Users and Their Points")
+        users = get_all_users()
+        if users:
+            df = pd.DataFrame(users, columns=["User ID", "Username", "Discord Name", "Points"])
+            st.dataframe(df, use_container_width=True)
+
+            csv = df.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                label="⬇️ Export as CSV",
+                data=csv,
+                file_name="point_users.csv",
+                mime="text/csv"
+            )
+        else:
+            st.info("No users found.")
