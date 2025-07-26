@@ -3,16 +3,19 @@ import psycopg2
 import hashlib
 import pandas as pd
 
-# --- DB Connection ---
+# --- DB Connection (with enforced SSL) ---
 @st.cache_resource
 def get_connection():
-    return psycopg2.connect(st.secrets["NEON_DB_URL"])
+    return psycopg2.connect(
+        st.secrets["NEON_DB_URL"],
+        sslmode="require"
+    )
 
 # --- Password hashing ---
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-# --- Admin verification ---
+# --- Admin login verification ---
 def verify_admin(username, password):
     conn = get_connection()
     cur = conn.cursor()
@@ -21,7 +24,7 @@ def verify_admin(username, password):
     cur.close()
     return row and row[0] == hash_password(password)
 
-# --- Generate IDs ---
+# --- ID generation ---
 def generate_userid():
     conn = get_connection()
     cur = conn.cursor()
@@ -38,7 +41,7 @@ def generate_pid():
     cur.close()
     return f"p{count + 1}"
 
-# --- DB operations ---
+# --- Database operations ---
 def get_all_users():
     conn = get_connection()
     cur = conn.cursor()
@@ -71,7 +74,7 @@ def insert_point_log(userid, amount, padded):
     conn.commit()
     cur.close()
 
-# --- Predefined actions ---
+# --- Predefined point actions ---
 POINT_ACTIONS = {
     "Joined Discord": (20, True),
     "Referred Friend (Joined Server)": (50, True),
@@ -80,11 +83,11 @@ POINT_ACTIONS = {
     "Redeemed $5 Steam Giftcard": (-250, False)
 }
 
-# --- Streamlit App ---
+# --- Streamlit Setup ---
 st.set_page_config(page_title="Admin Panel", layout="centered")
 st.title("🛡️ Admin Login")
 
-# --- Login Section ---
+# --- Admin Login ---
 if "admin_logged_in" not in st.session_state:
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
@@ -102,7 +105,7 @@ else:
         "🔍 View Users",
         "➕ Create User",
         "🏆 Apply Point Action",
-        "📊 View User Points"
+        "📊 View & Export Points"
     ])
 
     # --- Tab 1: View Users ---
@@ -116,7 +119,7 @@ else:
         else:
             st.warning("No users found.")
 
-    # --- Tab 2: Create New User ---
+    # --- Tab 2: Create User ---
     with tab2:
         uname = st.text_input("Username")
         dname = st.text_input("Discord Name")
@@ -129,7 +132,7 @@ else:
             else:
                 st.error("❌ Username required.")
 
-    # --- Tab 3: Point Actions ---
+    # --- Tab 3: Apply Point Action ---
     with tab3:
         users = get_all_users()
         if users:
@@ -148,7 +151,7 @@ else:
         else:
             st.warning("No users to assign actions.")
 
-    # --- Tab 4: View Points & Export ---
+    # --- Tab 4: View + Export Points ---
     with tab4:
         st.subheader("📊 All Users and Their Points")
         users = get_all_users()
