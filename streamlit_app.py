@@ -1,6 +1,4 @@
-import streamlit as st
 import psycopg2
-import os
 import hashlib
 import uuid
 import pandas as pd
@@ -32,7 +30,7 @@ def get_all_users():
     try:
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("SELECT id, username, discord, points FROM users;")
+        cur.execute("SELECT userid, username, discord, points FROM pointuser;")
         users = cur.fetchall()
         cur.close()
         conn.close()
@@ -60,7 +58,7 @@ def add_points(user_id, amount):
     try:
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("UPDATE users SET points = points + %s WHERE id = %s;", (amount, user_id))
+        cur.execute("UPDATE pointuser SET points = points + %s WHERE userid = %s;", (amount, user_id))
         cur.execute("INSERT INTO pointsystem (pid, userid, pamount, padded) VALUES (%s, %s, %s, %s);",
                     (f"p{uuid.uuid4().hex[:6]}", user_id, amount, True))
         conn.commit()
@@ -74,7 +72,7 @@ def remove_points(user_id, amount):
     try:
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("UPDATE users SET points = points - %s WHERE id = %s;", (amount, user_id))
+        cur.execute("UPDATE pointuser SET points = points - %s WHERE userid = %s;", (amount, user_id))
         cur.execute("INSERT INTO pointsystem (pid, userid, pamount, padded) VALUES (%s, %s, %s, %s);",
                     (f"p{uuid.uuid4().hex[:6]}", user_id, -amount, False))
         conn.commit()
@@ -120,4 +118,28 @@ with tab1:
 
 # --- Tab 2: Add/Remove Points ---
 with tab2:
-    users = get_all_use
+    users = get_all_users()
+    if users:
+        user_map = {f"{u[1]} ({u[2]}) - {u[3]} pts": u[0] for u in users}
+        selected = st.selectbox("Select user:", list(user_map.keys()))
+        amount = st.number_input("Point Amount", min_value=1, step=1)
+        if st.button("Add Points"):
+            add_points(user_map[selected], amount)
+            st.success("Points added successfully.")
+            st.rerun()
+        if st.button("Remove Points"):
+            remove_points(user_map[selected], amount)
+            st.success("Points removed successfully.")
+            st.rerun()
+    else:
+        st.info("No users available.")
+
+# --- Tab 3: Point History ---
+with tab3:
+    history = get_point_history()
+    if history:
+        df = pd.DataFrame(history, columns=["PID", "User ID", "Point Amount", "Added"])
+        st.write("### Point History")
+        st.dataframe(df)
+    else:
+        st.info("No point history found.")
