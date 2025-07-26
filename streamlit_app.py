@@ -67,12 +67,12 @@ def update_user_points(userid, amount):
     cur.close()
     conn.close()
 
-def insert_point_log(userid, amount, padded):
+def insert_point_log(userid, amount, padded, aid):
     conn = get_connection()
     cur = conn.cursor()
     pid = generate_pid()
-    cur.execute("INSERT INTO pointsystem (pid, userid, pamount, padded) VALUES (%s, %s, %s, %s);",
-                (pid, userid, amount, padded))
+    cur.execute("INSERT INTO pointsystem (pid, userid, pamount, padded, aid) VALUES (%s, %s, %s, %s, %s);",
+                (pid, userid, amount, padded, aid))
     conn.commit()
     cur.close()
     conn.close()
@@ -97,11 +97,12 @@ if "admin_logged_in" not in st.session_state:
     if st.button("Login"):
         if verify_admin(username, password):
             st.session_state["admin_logged_in"] = True
+            st.session_state["admin_username"] = username  # store admin ID
             st.rerun()
         else:
             st.error("❌ Invalid credentials.")
 else:
-    st.success("✅ Admin logged in.")
+    st.success(f"✅ Logged in as {st.session_state['admin_username']}")
     st.title("🛠️ Admin Panel: Point System")
 
     tab1, tab2, tab3, tab4 = st.tabs([
@@ -148,8 +149,8 @@ else:
                 userid = user[0]
                 amount, padded = POINT_ACTIONS[action]
                 update_user_points(userid, amount)
-                insert_point_log(userid, amount, padded)
-                st.success(f"✅ {action} applied to {user[1]} ({user[0]})")
+                insert_point_log(userid, amount, padded, st.session_state["admin_username"])
+                st.success(f"✅ {action} applied to {user[1]} ({user[0]}) by {st.session_state['admin_username']}")
                 st.rerun()
         else:
             st.warning("No users to assign actions.")
