@@ -79,7 +79,7 @@ def insert_point_log(userid, amount, padded, aid):
 
 # --- Predefined point actions ---
 POINT_ACTIONS = {
-    "Joined Discord": (20, True),
+    "Referred Joined Discord": (20, True),
     "Referred Friend (Joined Server)": (50, True),
     "Referred Friend (Got SGT)": (100, True),
     "Redeemed $10 Reward": (-250, False),
